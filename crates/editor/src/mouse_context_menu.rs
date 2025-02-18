@@ -9,7 +9,7 @@ use gpui::prelude::FluentBuilder;
 use gpui::{Context, DismissEvent, Entity, Focusable as _, Pixels, Point, Subscription, Window};
 use std::ops::Range;
 use text::PointUtf16;
-use workspace::OpenInTerminal;
+use workspace::{CopyPath, CopyRelativePath, OpenInTerminal};
 
 #[derive(Debug)]
 pub enum MenuPosition {
@@ -153,7 +153,7 @@ pub fn deploy_context_menu(
         }
 
         let focus = window.focused(cx);
-        let has_reveal_target = editor.target_file(cx).is_some();
+        let has_target_file = editor.target_file(cx).is_some();
         let reveal_in_finder_label = if cfg!(target_os = "macos") {
             "Reveal in Finder"
         } else {
@@ -196,7 +196,7 @@ pub fn deploy_context_menu(
                 .action("Paste", Box::new(Paste))
                 .separator()
                 .map(|builder| {
-                    if has_reveal_target {
+                    if has_target_file {
                         builder.action(reveal_in_finder_label, Box::new(RevealInFileManager))
                     } else {
                         builder
@@ -211,7 +211,14 @@ pub fn deploy_context_menu(
                     } else {
                         builder.disabled_action(COPY_PERMALINK_LABEL, Box::new(CopyPermalinkToLine))
                     }
+                })
+                .when(has_target_file, |builder| {
+                    builder
+                        .separator()
+                        .action("Copy Path", Box::new(CopyPath))
+                        .action("Copy Relative Path", Box::new(CopyRelativePath))
                 });
+
             match focus {
                 Some(focus) => builder.context(focus),
                 None => builder,
